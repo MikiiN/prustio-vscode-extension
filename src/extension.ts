@@ -1,78 +1,119 @@
 import * as vscode from 'vscode';
 import { PrustioTaskProvider } from './components/sidebar';
-import { ToolWrapper  } from './toolWrapper';
+import { CreateProjectWebview } from './components/createProject'; 
+import { ToolWrapper } from './wrappers/toolWrapper';
+import { EnvironmentManager } from './components/envManager';
 import { exec } from 'child_process';
 import * as util from 'util';
+import * as path from 'path';
+import * as fs from 'fs';
 
-let prustioTerminal: vscode.Terminal | undefined;
 const execAsync = util.promisify(exec);
+let monitorTerminal: vscode.Terminal | undefined;
+const workingDir = getCurrentlyOpenedDirectory();
 
 export async function activate(context: vscode.ExtensionContext) {
-
     const isInstalled = await ensurePrustioInstalled();
-    
     if (!isInstalled) {
         vscode.window.showErrorMessage("PrustIO extension cannot run without the CLI.");
-        return; // Stop activating the extension if installation failed
+        return; 
     }
-
-    console.log('PrustIO extension is now active!');
-
-    const buildButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-    buildButton.text = "$(gear) PrustIO Build"; 
-    buildButton.tooltip = "Build the current PrustIO project";
-    buildButton.command = 'prustio.buildProject';
-    buildButton.show();
-    context.subscriptions.push(buildButton);
 
     const taskProvider = new PrustioTaskProvider();
     vscode.window.registerTreeDataProvider('prustio-tasks-view', taskProvider);
-    
-    // Build
-    let buildCommand = vscode.commands.registerCommand('prustio.buildProject', () => {
-        runInTerminal("prustio run -t build");
+
+    const fileWatcher = vscode.workspace.createFileSystemWatcher('**/Prustio.toml');
+    fileWatcher.onDidCreate(() => taskProvider.refresh());
+    fileWatcher.onDidDelete(() => taskProvider.refresh());
+    context.subscriptions.push(fileWatcher);
+
+    const globalWrapper = new ToolWrapper(workingDir);
+
+   let createCommand = vscode.commands.registerCommand('prustio.createProject', () => {
+        // Find the currently opened directory (if any)
+        let defaultLocation = (workingDir === undefined ? "" : workingDir);
+        vscode.window.showInformationMessage(defaultLocation);
+
+        // Open the HTML form and pass the default location!
+        CreateProjectWebview.render(globalWrapper, defaultLocation);
     });
 
-    // Upload
-    let uploadCommand = vscode.commands.registerCommand('prustio.uploadProject', () => {
-        runInTerminal("prustio run -t upload");
-    });
+    context.subscriptions.push(createCommand);
 
-    // Monitor
-    let monitorCommand = vscode.commands.registerCommand('prustio.monitorProject', () => {
-        runInTerminal("prustio device monitor");
-    });
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (workspaceFolders && workspaceFolders.length > 0) {
+        
+        const workspaceRoot = workspaceFolders[0].uri.fsPath;
+        const prustioWrapper = new ToolWrapper(workspaceRoot);
 
-    // Clean
-    let cleanCommand = vscode.commands.registerCommand('prustio.cleanProject', () => {
-        runInTerminal("prustio clean");
-    });
+        const tomlPath = path.join(workspaceRoot, 'Prustio.toml');
+         if (fs.existsSync(tomlPath)) {
+             const envManager = new EnvironmentManager(context, workspaceRoot, prustioWrapper, fileWatcher);
+             envManager.init();
+         }
 
-    // push all commands to subscriptions so VS Code can clean them up later
-    context.subscriptions.push(buildCommand, uploadCommand, monitorCommand, cleanCommand);
-    
-    // Listen for when the user manually clicks the trash can on the terminal
-    vscode.window.onDidCloseTerminal(t => {
-        if (t === prustioTerminal) {
-            // Nullify our reference so the next command creates a fresh one
-            prustioTerminal = undefined; 
-        }
-    });
+
+        const buildButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+        buildButton.text = "$(gear) PrustIO Build"; 
+        buildButton.tooltip = "Build the current PrustIO project";
+        buildButton.command = 'prustio.buildProject';
+        buildButton.show();
+        context.subscriptions.push(buildButton);
+        
+        const runTaskWithProgress = async (taskName: string, taskFunction: () => Promise<string>) => {
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: `PrustIO: ${taskName}...`,
+                cancellable: false
+            }, async () => {
+                try {
+                    await taskFunction();
+                    vscode.window.showInformationMessage(`PrustIO: ${taskName} succeeded!`);
+                } catch (error: any) {
+                    vscode.window.showErrorMessage(error.message);
+                }
+            });
+        };
+
+        let buildCommand = vscode.commands.registerCommand('prustio.buildProject', () => { runTaskWithProgress("Building project", () => prustioWrapper.build()); });
+        let uploadCommand = vscode.commands.registerCommand('prustio.uploadProject', () => { runTaskWithProgress("Uploading project", () => prustioWrapper.upload()); });
+        let cleanCommand = vscode.commands.registerCommand('prustio.cleanProject', () => { runTaskWithProgress("Cleaning project", () => prustioWrapper.clean()); });
+
+        let monitorCommand = vscode.commands.registerCommand('prustio.monitorProject', () => {
+            if (!monitorTerminal) { 
+                monitorTerminal = vscode.window.createTerminal("PrustIO Monitor");
+            }
+            monitorTerminal.show();
+            monitorTerminal.sendText("prustio device monitor");
+        });
+
+        context.subscriptions.push(buildCommand, uploadCommand, monitorCommand, cleanCommand);
+
+        vscode.window.onDidCloseTerminal(t => { 
+            if (t === monitorTerminal) {
+                monitorTerminal = undefined; 
+            }
+        });
+    }
 }
 
-/**
- * Checks if the CLI exists, and installs it if it doesn't.
- * @returns boolean indicating if the CLI is ready to use.
- */
+function getCurrentlyOpenedDirectory(): string | undefined {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    // Check if at least one folder is open
+    if (workspaceFolders && workspaceFolders.length > 0) {
+        // Grab the first opened folder's file system path
+        const currentDirectory = workspaceFolders[0].uri.fsPath;
+        return currentDirectory;
+    }
+    // Return undefined if no folder is currently open
+    return undefined;
+}
+
 async function ensurePrustioInstalled(): Promise<boolean> {
     try {
-        // Test if the command exists by asking for its version
         await execAsync('prustio --version');
-        return true; // It exists! No need to do anything.
-        
+        return true; 
     } catch (error) {
-        // The command failed, which usually means it's not installed.
-        // Let's ask the user if they want to install it.
         const response = await vscode.window.showInformationMessage(
             "The PrustIO CLI is missing. Would you like to install it now?",
             "Install", "Cancel"
@@ -81,26 +122,20 @@ async function ensurePrustioInstalled(): Promise<boolean> {
         if (response === "Install") {
             return await installPrustioCLI();
         }
-        
         return false;
     }
 }
 
-/**
- * Runs the installation command with a nice UI progress bar.
- */
 async function installPrustioCLI(): Promise<boolean> {
     try {
         await execAsync('cargo --version');
     } catch {
-        // Cargo is missing! Guide the user to install it.
         const response = await vscode.window.showErrorMessage(
             "Cargo is not installed. You need the Rust toolchain to install PrustIO.",
             "Get Rust (rustup.rs)", "Cancel"
         );
 
         if (response === "Get Rust (rustup.rs)") {
-            // open web browser to the Rust installation page
             vscode.env.openExternal(vscode.Uri.parse('https://rustup.rs/'));
         }
         return false; 
@@ -112,15 +147,10 @@ async function installPrustioCLI(): Promise<boolean> {
         cancellable: false
     }, async (progress) => {
         try {
-            // Replace this with your actual installation command
             progress.report({ message: "Running 'cargo install prustio'..." });
-            
-            // This might take a minute, so we wait for the promise to resolve
             await execAsync('cargo install prustio');
-            
             vscode.window.showInformationMessage("PrustIO CLI installed successfully!");
             return true;
-            
         } catch (error: any) {
             vscode.window.showErrorMessage(`Failed to install CLI: ${error.message}`);
             return false;
@@ -128,21 +158,8 @@ async function installPrustioCLI(): Promise<boolean> {
     });
 }
 
-/**
- * Helper function to send commands to the PrustIO terminal.
- * Creates the terminal if it doesn't exist, brings it to the front, and runs the CLI.
- */
-function runInTerminal(command: string) {
-    if (!prustioTerminal) {
-        prustioTerminal = vscode.window.createTerminal("PrustIO");
-    }
-    prustioTerminal.show(); 
-    prustioTerminal.sendText(command);
-}
-
 export function deactivate() {
-    // Cleanly dispose of the terminal when the extension shuts down
-    if (prustioTerminal) {
-        prustioTerminal.dispose();
+    if (monitorTerminal) {
+        monitorTerminal.dispose();
     }
 }
