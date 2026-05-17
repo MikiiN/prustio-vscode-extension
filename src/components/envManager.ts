@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ToolWrapper } from '../toolWrapper';
+import { ToolWrapper } from '../wrappers/toolWrapper';
 
 export class EnvironmentManager {
     private envButton: vscode.StatusBarItem;
@@ -41,13 +41,18 @@ export class EnvironmentManager {
         }
 
         const activeEnv = getActiveEnvFromToml(this.tomlPath);
+        const envs = parseEnvironmentsFromToml(this.tomlPath);
         if (activeEnv) {
-            this.envButton.text = `$(symbol-event) PrustIO: ${activeEnv}`;
-            this.prustioWrapper.activateEnv(activeEnv); 
-            this.envButton.show();
+            if (envs.length === 0) {
+                this.envButton.text = `$(symbol-event) PrustIO: No environment specified.`; 
+                this.envButton.show();
+            } else {
+                this.envButton.text = `$(symbol-event) PrustIO: ${activeEnv}`;
+                this.prustioWrapper.activateEnv(activeEnv); 
+                this.envButton.show();
+            }
         } else {
             this.envButton.text = `$(symbol-event) PrustIO: Select Env`;
-            // this.prustioWrapper.activateEnv(undefined);
             this.envButton.show();
         }
     }
@@ -60,13 +65,39 @@ export class EnvironmentManager {
             return;
         }
 
-        const selection = await vscode.window.showQuickPick(envs, {
-            placeHolder: "Select active environment",
-            title: "PrustIO Environments"
+        const activateEnv = getActiveEnvFromToml(this.tomlPath);
+
+        const quickPick = vscode.window.createQuickPick();
+        quickPick.title = "pRustIO Environments";
+        quickPick.placeholder = "Select active environment";
+
+        const quickPickItems = envs.map(env => ({label: env}));
+        quickPick.items = quickPickItems;
+
+        if (activateEnv) {
+            const itemToSelect = quickPickItems.find(item => item.label === activateEnv);
+            if (itemToSelect) {
+                quickPick.activeItems = [itemToSelect];
+            }
+        }
+
+        quickPick.onDidAccept(() => {
+            const selection = quickPick.selectedItems[0];
+            const env = selection === undefined ? getActiveEnvFromToml(this.tomlPath) : selection.label;
+            if (env === undefined) {
+                vscode.window.showErrorMessage("No defined environment in the configuration file.");
+            } else {
+                this.prustioWrapper.activateEnv(env);
+                vscode.window.setStatusBarMessage(`$(check) PrustIO: Environment changed to ${env}`, 3000);
+            }
+            quickPick.hide();
         });
 
-        const env = selection === undefined ? getActiveEnvFromToml(this.tomlPath) : selection;
-        await this.prustioWrapper.activateEnv(env);
+        quickPick.onDidHide(() => {
+            quickPick.dispose();
+        });
+
+        quickPick.show();
     }
 }
 
@@ -76,7 +107,9 @@ export class EnvironmentManager {
 
 export function parseEnvironmentsFromToml(tomlPath: string): string[] {
     try {
-        if (!fs.existsSync(tomlPath)) return [];
+        if (!fs.existsSync(tomlPath)) { 
+            return [];
+        }
         const content = fs.readFileSync(tomlPath, 'utf8');
         const envs: string[] = [];
         const envRegex = /^\[env\.([a-zA-Z0-9_-]+)\]/gm;
@@ -90,7 +123,9 @@ export function parseEnvironmentsFromToml(tomlPath: string): string[] {
 
 export function getActiveEnvFromToml(tomlPath: string): string | undefined {
     try {
-        if (!fs.existsSync(tomlPath)) return undefined;
+        if (!fs.existsSync(tomlPath)) {
+            return undefined;
+        }
         const content = fs.readFileSync(tomlPath, 'utf8');
         const match = content.match(/^active_env\s*=\s*"([^"]+)"/m);
         return match ? match[1] : undefined;

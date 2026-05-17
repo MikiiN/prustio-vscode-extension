@@ -12,7 +12,9 @@
   "extensionDependencies": [
     "rust-lang.rust-analyzer"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "workspaceContains:Prustio.toml"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -42,7 +44,7 @@
         {
           "id": "prustio-explorer",
           "title": "PrustIO",
-          "icon": "resources/icon_prustio.svg" 
+          "icon": "resources/icon_prustio.svg"
         }
       ]
     },
@@ -50,7 +52,8 @@
       "prustio-explorer": [
         {
           "id": "prustio-tasks-view",
-          "name": "Project Tasks"
+          "name": "Project Tasks",
+          "icon": "resources/icon_prustio.svg"
         }
       ]
     }

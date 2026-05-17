@@ -76,11 +76,10 @@ export class ToolWrapper {
      * Fetches the list of boards from the CLI
      */
     public async getBoards(): Promise<PrustioBoard[]> {
-        // NOTE: Make sure this command exactly matches your CLI (e.g. 'prustio boards list --json-output' vs 'prustio boards --json-output')
         const rawOutput = await this.runCommand('prustio boards --json-output'); 
         
         try {
-            // 1. Find the first '[' and the last ']' to extract ONLY the JSON array
+            // Formatting
             const startIndex = rawOutput.indexOf('[');
             const endIndex = rawOutput.lastIndexOf(']');
 
@@ -88,16 +87,16 @@ export class ToolWrapper {
                 throw new Error("No JSON array brackets '[' or ']' found in the CLI output.");
             }
 
-            // 2. Slice out just the JSON part, ignoring any surrounding text/logs
+            // Ignoring any surrounding text/logs
             const cleanJsonString = rawOutput.substring(startIndex, endIndex + 1);
 
-            // 3. Parse the clean string
             const data: PrustioBoard[] = JSON.parse(cleanJsonString);
             return data;
 
         } catch (error: any) {
-            // If it STILL fails, this will throw an error showing exactly what it tried to parse!
-            const preview = rawOutput.substring(0, 150).replace(/\n/g, "\\n"); // show first 150 chars safely
+            // If it fails, throw an error showing exactly what it tried to parse
+            // Mainly for debug
+            const preview = rawOutput.substring(0, 150).replace(/\n/g, "\\n"); 
             throw new Error(`Parse failed: ${error.message}. CLI Output preview: "${preview}..."`);
         }
     }
