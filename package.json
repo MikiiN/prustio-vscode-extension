@@ -9,13 +9,34 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "extensionDependencies": [
+    "rust-lang.rust-analyzer"
+  ],
+  "activationEvents": [
+    "workspaceContains:Prustio.toml"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "prustio.buildProject",
         "title": "PrustIO: Build"
+      },
+      {
+        "command": "prustio.createProject",
+        "title": "PrustIO: Create New Project"
+      },
+      {
+        "command": "prustio.uploadProject",
+        "title": "PrustIO: Upload"
+      },
+      {
+        "command": "prustio.monitorProject",
+        "title": "PrustIO: Monitor"
+      },
+      {
+        "command": "prustio.cleanProject",
+        "title": "PrustIO: Clean"
       }
     ],
     "viewsContainers": {
@@ -23,7 +44,7 @@
         {
           "id": "prustio-explorer",
           "title": "PrustIO",
-          "icon": "resources/icon_prustio.svg" 
+          "icon": "resources/icon_prustio.svg"
         }
       ]
     },
@@ -31,7 +52,8 @@
       "prustio-explorer": [
         {
           "id": "prustio-tasks-view",
-          "name": "Project Tasks"
+          "name": "Project Tasks",
+          "icon": "resources/icon_prustio.svg"
         }
       ]
     }
