@@ -2,68 +2,71 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 
+/**
+ * Provides the data for the pRustIO tasks view in the sidebar.
+ */
 export class PrustioTaskProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
-    
-    // Create an event emitter so we can force the sidebar to refresh when the project is created
-    private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem | undefined | null | void>();
-    readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
+    private _onDidChangeTreeData = new vscode.EventEmitter<void>();
+    readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-    // Call this method to tell VS Code to redraw the sidebar
+    /**
+     * Refreshes the tasks view.
+     */
     refresh(): void {
         this._onDidChangeTreeData.fire();
     }
 
+    /**
+     * Gets the tree item representation for a given element.
+     * @param element The item to display in the tree.
+     * @returns The corresponding vscode.TreeItem.
+     */
     getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
         return element;
     }
 
-    getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
+    /**
+     * Gets the child elements for a specific tree item.
+     * If no element is provided, it returns the root tasks.
+     * @param element The parent item, or undefined for root elements.
+     * @returns A promise that resolves to an array of child tree items.
+     */
+    async getChildren(element?: vscode.TreeItem): Promise<vscode.TreeItem[]> {
         if (element) {
-            return Promise.resolve([]); 
-        } else {
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            
-            // Handle edge case: No folder is opened at all
-            if (!workspaceFolders || workspaceFolders.length === 0) {
-                return this.getCreateNewProject();
-            }
+            return []; 
+        } 
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
-            const workspaceRoot = workspaceFolders[0].uri.fsPath;
-            const tomlPath = path.join(workspaceRoot, 'Prustio.toml');
-
-            // Check if it's a PrustIO project
-            if (fs.existsSync(tomlPath)) {
-                // It IS a project! Show operations.
-                return Promise.resolve([
-                    this.createTaskItem('Build', 'prustio.buildProject', 'gear'),
-                    this.createTaskItem('Upload', 'prustio.uploadProject', 'zap'),
-                    this.createTaskItem('Monitor', 'prustio.monitorProject', 'device-desktop'),
-                    this.createTaskItem('Clean', 'prustio.cleanProject', 'trash')
-                ]);
-            } else {
-                // It is NOT a project. Show creation option.
-                return this.getCreateNewProject();
-            }
+        // check if workspace is opened and contains Prustio.toml file
+        if (!workspaceRoot || !fs.existsSync(path.join(workspaceRoot, 'Prustio.toml'))) {
+            return [this.createTaskItem('Create New Project', 'prustio.createProject', 'diff-insert')];
         }
+
+        return [
+            this.createTaskItem('Build', 'prustio.buildProject', 'gear'),
+            this.createTaskItem('Upload', 'prustio.uploadProject', 'zap'),
+            this.createTaskItem('Monitor', 'prustio.monitorProject', 'device-desktop'),
+            this.createTaskItem('Clean', 'prustio.cleanProject', 'trash')
+        ];
     }
 
-    private getCreateNewProject() {
-        return Promise.resolve([
-            this.createTaskItem('Create New Project', 'prustio.createProject', 'diff-insert')
-        ]);
-    }
-
+    /**
+     * A helper method to create a single task item for the sidebar.
+     * * @param label The text displayed for the item.
+     * @param commandId The ID of the command to run when the item is clicked.
+     * @param iconName The name of the icon to show next to the label.
+     * @returns A configured vscode.TreeItem.
+     */
     private createTaskItem(label: string, commandId: string, iconName: string): vscode.TreeItem {
         const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
         
-        if (commandId) {
-            item.command = {
-                command: commandId,
-                title: label
-            };
-        }
+        item.command = {
+            command: commandId,
+            title: label
+        };
         
         item.iconPath = new vscode.ThemeIcon(iconName);
+        
         return item;
     }
 }

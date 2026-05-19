@@ -2,12 +2,25 @@ import * as vscode from 'vscode';
 import { ToolWrapper, PrustioBoard } from '../wrappers/toolWrapper';
 import * as path from 'path';
 
+/**
+ * Represents a webview panel used to create a new pRustIO project.
+ */
 export class CreateProjectWebview {
+   /**
+     * The currently active webview panel, or undefined if none is open.
+     */
     public static currentPanel: CreateProjectWebview | undefined;
+   
     private readonly _panel: vscode.WebviewPanel;
     private _disposables: vscode.Disposable[] = [];
     private defaultLocation: string;
 
+    /**
+     * Creates a new instance of the CreateProjectWebview.
+     * @param panel The webview panel to use.
+     * @param globalWrapper The tool wrapper used to interact with the CLI.
+     * @param defaultLocation The default directory path for the new project.
+     */
     private constructor(panel: vscode.WebviewPanel, private globalWrapper: ToolWrapper, defaultLocation: string) {
         this._panel = panel;
         this.defaultLocation = defaultLocation; 
@@ -24,7 +37,7 @@ export class CreateProjectWebview {
                         defaultUri: this.defaultLocation ? vscode.Uri.file(this.defaultLocation) : undefined
                     });
                     if (uri && uri[0]) {
-                        // Send the new path back to the webview
+                        // send the new path back to the webview
                         this._panel.webview.postMessage({ command: 'setPath', path: uri[0].fsPath });
                     }
                     return;
@@ -35,16 +48,21 @@ export class CreateProjectWebview {
         }, null, this._disposables);
     }
 
+    /**
+     * Displays the webview panel. If it is already open, it brings it to the front.
+     * @param globalWrapper The tool wrapper for CLI interactions.
+     * @param defaultLocation The default directory path to suggest to the user.
+     */
     public static async render(globalWrapper: ToolWrapper, defaultLocation: string = '') {
         if (CreateProjectWebview.currentPanel) {
-            // Update the location if the user opens a different folder and re-clicks the button
+            // update the location if user opens a different directory
             CreateProjectWebview.currentPanel.defaultLocation = defaultLocation;
             CreateProjectWebview.currentPanel._update();
             CreateProjectWebview.currentPanel._panel.reveal(vscode.ViewColumn.One);
         } else {
             const panel = vscode.window.createWebviewPanel(
                 'prustioCreateProject',
-                'Create PrustIO Project',
+                'Create pRustIO Project',
                 vscode.ViewColumn.One,
                 { enableScripts: true, retainContextWhenHidden: true }
             );
@@ -54,6 +72,9 @@ export class CreateProjectWebview {
         }
     }
 
+    /**
+     * Updates the content of the webview, including fetching the available boards.
+     */
     private async _update() {
         const webview = this._panel.webview;
         
@@ -67,6 +88,10 @@ export class CreateProjectWebview {
         }
     }
 
+    /**
+     * Handles the form submission when the user clicks the create button.
+     * @param data An object containing the project details provided by the user.
+     */
     private async handleFormSubmit(data: { projectName: string, projectLocation: string, mode: string, boardId: string }) {
         const { projectName, projectLocation, mode, boardId } = data;
         
@@ -83,7 +108,7 @@ export class CreateProjectWebview {
         }, async () => {
             try {
                 await this.globalWrapper.init(projectLocation, projectName, hybrid_flag, boardId);
-                vscode.window.showInformationMessage(`PrustIO: Project ${projectName} created successfully!`);
+                vscode.window.showInformationMessage(`pRustIO: Project ${projectName} created successfully!`);
                 const newWorkspaceUri = vscode.Uri.file(path.join(projectLocation, projectName));
                 vscode.commands.executeCommand('vscode.openFolder', newWorkspaceUri);
                 this.dispose(); 
@@ -93,6 +118,9 @@ export class CreateProjectWebview {
         });
     }
 
+    /**
+     * Cleans up the webview resources when the panel is closed.
+     */
     public dispose() {
         CreateProjectWebview.currentPanel = undefined;
         this._panel.dispose();
@@ -102,6 +130,13 @@ export class CreateProjectWebview {
         }
     }
 
+    /**
+     * Generates the HTML content for the webview interface.
+     * @param statusText The text to display as the current status.
+     * @param boards An array of available boards to show in the dropdown list.
+     * @param isLoading A boolean indicating if the data is still loading.
+     * @returns A string containing the HTML markup.
+     */
     private _getHtmlForWebview(statusText: string, boards: PrustioBoard[], isLoading: boolean) {
         const boardOptions = boards.map(b => 
             `<option value="${b.id}">${b.name} (${b.mcu})</option>`
@@ -138,7 +173,7 @@ export class CreateProjectWebview {
                 </style>
             </head>
             <body>
-                <h2>Create New PrustIO Project</h2>
+                <h2>Create New pRustIO Project</h2>
                 
                 ${isLoading ? `<div class="status">${statusText}</div>` : ''}
                 ${!isLoading && statusText ? `<div class="status" style="color: var(--vscode-errorForeground)">${statusText}</div>` : ''}
