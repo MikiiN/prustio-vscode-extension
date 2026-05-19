@@ -145,8 +145,10 @@ export class ToolWrapper {
 
             return stdout.trim();
         } catch (error: any) {
-            const errorMessage = error.stderr || error.message || String(error);
-            throw new Error(`PrustIO Error: ${errorMessage}`);
+            const parsedJson = JSON.parse(error.stdout);
+            let finalErrorMessage = parsedJson.message;
+
+            throw new Error(`PrustIO Error: ${finalErrorMessage}`);
         }
     }
 
