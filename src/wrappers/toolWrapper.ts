@@ -21,21 +21,22 @@ export interface PrustioBoard {
 
 export class ToolWrapper {
     private workspaceRoot?: string;
+    private prustioTerminal?: vscode.Terminal;
 
-    /**
-     * @param workspaceRoot The directory where PrustIO commands should be executed.
-     */
     constructor(workspaceRoot?: string) {
         this.workspaceRoot = workspaceRoot;
     }
 
+    /**
+     * Runs active command
+     */
     public async activateEnv(env_name: string): Promise<string> {
         const command = `prustio activate ${env_name}`;
         return this.runCommand(command);
     }
  
     /**
-     * Runs init project
+     * Runs init project command
      */
     public async init(targetDir: string, name: string, hybrid_flag: boolean, board: string): Promise<string> {
         const command = hybrid_flag ? 
@@ -45,31 +46,56 @@ export class ToolWrapper {
     }
 
     /**
-     * Runs upload target
+     * Runs upload target command
      */
-    public async upload(): Promise<string> {
-        return this.runCommand('prustio run -t upload');
+    public async upload() {
+        this.runCommandInTerminal('prustio run -t upload');
     }
 
     /**
-     * Runs build target
+     * Runs build target command
      */
-    public async build(): Promise<string> {
-        return this.runCommand('prustio run -t build');
+    public async build() {
+        this.runCommandInTerminal('prustio run -t build');
     }
 
     /**
-     * Runs default target
+     * Runs default target command
      */
-    public async run(): Promise<string> {
-        return this.runCommand('prustio run');
+    public async run() {
+        this.runCommandInTerminal('prustio run');
     }
 
     /**
-     * Runs project clean
+     * Runs project clean command
      */
     public async clean(): Promise<string> {
         return this.runCommand('prustio clean');
+    }
+
+    /**
+     * Starts the device monitor in a VS Code terminal
+     */
+    public monitor() {
+        this.runCommandInTerminal("prustio device monitor");
+    }
+
+    /**
+     * Cleans up the terminal reference if the user closes it manually
+     */
+    public handleClosedTerminal(terminal: vscode.Terminal) {
+        if (this.prustioTerminal === terminal) {
+            this.prustioTerminal = undefined;
+        }
+    }
+
+    /**
+     * Disposes of the terminal when the extension deactivates
+     */
+    public dispose() {
+        if (this.prustioTerminal) {
+            this.prustioTerminal.dispose();
+        }
     }
 
     /**
@@ -79,7 +105,7 @@ export class ToolWrapper {
         const rawOutput = await this.runCommand('prustio boards --json-output'); 
         
         try {
-            // Formatting
+            // formatting
             const startIndex = rawOutput.indexOf('[');
             const endIndex = rawOutput.lastIndexOf(']');
 
@@ -87,15 +113,15 @@ export class ToolWrapper {
                 throw new Error("No JSON array brackets '[' or ']' found in the CLI output.");
             }
 
-            // Ignoring any surrounding text/logs
+            // ignoring any surrounding text/logs
             const cleanJsonString = rawOutput.substring(startIndex, endIndex + 1);
 
             const data: PrustioBoard[] = JSON.parse(cleanJsonString);
             return data;
 
         } catch (error: any) {
-            // If it fails, throw an error showing exactly what it tried to parse
-            // Mainly for debug
+            // if it fails, show the string
+            // mainly for debug
             const preview = rawOutput.substring(0, 150).replace(/\n/g, "\\n"); 
             throw new Error(`Parse failed: ${error.message}. CLI Output preview: "${preview}..."`);
         }
@@ -107,7 +133,7 @@ export class ToolWrapper {
      */
     private async runCommand(command: string, customCwd?: string): Promise<string> {
         try {
-            // Determine where to run the command
+            // determine where to run the command
             const cwd = customCwd || this.workspaceRoot;
             const options = cwd ? { cwd } : {};
 
@@ -122,5 +148,13 @@ export class ToolWrapper {
             const errorMessage = error.stderr || error.message || String(error);
             throw new Error(`PrustIO Error: ${errorMessage}`);
         }
+    }
+
+    private runCommandInTerminal(command: string) {
+        if (!this.prustioTerminal) {
+            this.prustioTerminal = vscode.window.createTerminal("PrustIO");
+        }
+        this.prustioTerminal.show();
+        this.prustioTerminal.sendText(command);
     }
 }

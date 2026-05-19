@@ -101,9 +101,9 @@ export class EnvironmentManager {
     }
 }
 
-// ==========================================
-// EXPORTED TOML HELPER FUNCTIONS
-// ==========================================
+//
+// TOML helper functions
+//
 
 export function parseEnvironmentsFromToml(tomlPath: string): string[] {
     try {

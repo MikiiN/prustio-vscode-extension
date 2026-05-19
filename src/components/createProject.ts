@@ -24,7 +24,7 @@ export class CreateProjectWebview {
                         defaultUri: this.defaultLocation ? vscode.Uri.file(this.defaultLocation) : undefined
                     });
                     if (uri && uri[0]) {
-                        // Send the new path back to the webview
+                        // send the new path back to the webview
                         this._panel.webview.postMessage({ command: 'setPath', path: uri[0].fsPath });
                     }
                     return;
@@ -37,7 +37,7 @@ export class CreateProjectWebview {
 
     public static async render(globalWrapper: ToolWrapper, defaultLocation: string = '') {
         if (CreateProjectWebview.currentPanel) {
-            // Update the location if the user opens a different folder and re-clicks the button
+            // update the location if user opens a different directory
             CreateProjectWebview.currentPanel.defaultLocation = defaultLocation;
             CreateProjectWebview.currentPanel._update();
             CreateProjectWebview.currentPanel._panel.reveal(vscode.ViewColumn.One);
