@@ -4,7 +4,7 @@ import * as path from 'path';
 import { ToolWrapper } from '../wrappers/toolWrapper';
 
 /**
- * Manages the PrustIO environment selection through the VS Code status bar.
+ * Manages the pRustIO environment selection through the VS Code status bar.
  */
 export class EnvironmentManager {
     private envButton: vscode.StatusBarItem;
@@ -27,7 +27,7 @@ export class EnvironmentManager {
         
         this.envButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
         this.envButton.command = 'prustio.selectEnvironment';
-        this.envButton.tooltip = "Select PrustIO Environment";
+        this.envButton.tooltip = "Select pRustIO Environment";
         this.context.subscriptions.push(this.envButton);
     }
 
@@ -60,15 +60,15 @@ export class EnvironmentManager {
         const envs = parseEnvironmentsFromToml(this.tomlPath);
         if (activeEnv) {
             if (envs.length === 0) {
-                this.envButton.text = `$(symbol-event) PrustIO: No environment specified.`; 
+                this.envButton.text = `$(symbol-event) pRustIO: No environment specified.`; 
                 this.envButton.show();
             } else {
-                this.envButton.text = `$(symbol-event) PrustIO: ${activeEnv}`;
+                this.envButton.text = `$(symbol-event) pRustIO: ${activeEnv}`;
                 this.prustioWrapper.activateEnv(activeEnv); 
                 this.envButton.show();
             }
         } else {
-            this.envButton.text = `$(symbol-event) PrustIO: Select Env`;
+            this.envButton.text = `$(symbol-event) pRustIO: Select Env`;
             this.envButton.show();
         }
     }
@@ -107,7 +107,7 @@ export class EnvironmentManager {
                 vscode.window.showErrorMessage("No defined environment in the configuration file.");
             } else {
                 this.prustioWrapper.activateEnv(env);
-                vscode.window.setStatusBarMessage(`$(check) PrustIO: Environment changed to ${env}`, 3000);
+                vscode.window.setStatusBarMessage(`$(check) pRustIO: Environment changed to ${env}`, 3000);
             }
             quickPick.hide();
         });

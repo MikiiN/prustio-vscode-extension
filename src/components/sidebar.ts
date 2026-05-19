@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 /**
- * Provides the data for the PrustIO tasks view in the sidebar.
+ * Provides the data for the pRustIO tasks view in the sidebar.
  */
 export class PrustioTaskProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     private _onDidChangeTreeData = new vscode.EventEmitter<void>();

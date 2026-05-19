@@ -3,7 +3,7 @@ import { ToolWrapper, PrustioBoard } from '../wrappers/toolWrapper';
 import * as path from 'path';
 
 /**
- * Represents a webview panel used to create a new PrustIO project.
+ * Represents a webview panel used to create a new pRustIO project.
  */
 export class CreateProjectWebview {
    /**
@@ -62,7 +62,7 @@ export class CreateProjectWebview {
         } else {
             const panel = vscode.window.createWebviewPanel(
                 'prustioCreateProject',
-                'Create PrustIO Project',
+                'Create pRustIO Project',
                 vscode.ViewColumn.One,
                 { enableScripts: true, retainContextWhenHidden: true }
             );
@@ -108,7 +108,7 @@ export class CreateProjectWebview {
         }, async () => {
             try {
                 await this.globalWrapper.init(projectLocation, projectName, hybrid_flag, boardId);
-                vscode.window.showInformationMessage(`PrustIO: Project ${projectName} created successfully!`);
+                vscode.window.showInformationMessage(`pRustIO: Project ${projectName} created successfully!`);
                 const newWorkspaceUri = vscode.Uri.file(path.join(projectLocation, projectName));
                 vscode.commands.executeCommand('vscode.openFolder', newWorkspaceUri);
                 this.dispose(); 
@@ -173,7 +173,7 @@ export class CreateProjectWebview {
                 </style>
             </head>
             <body>
-                <h2>Create New PrustIO Project</h2>
+                <h2>Create New pRustIO Project</h2>
                 
                 ${isLoading ? `<div class="status">${statusText}</div>` : ''}
                 ${!isLoading && statusText ? `<div class="status" style="color: var(--vscode-errorForeground)">${statusText}</div>` : ''}

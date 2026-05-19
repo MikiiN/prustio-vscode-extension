@@ -15,14 +15,14 @@ let activeProjectWrapper: ToolWrapper | undefined;
 
 /**
  * This function is called when the extension is activated.
- * It checks if the PrustIO CLI is installed, sets up the user interface,
+ * It checks if the pRustIO CLI is installed, sets up the user interface,
  * and registers commands for the workspace.
  * @param context The context in which the extension runs.
  */
 export async function activate(context: vscode.ExtensionContext) {
     // initial pRustIO validation
     if (!(await ensurePrustioInstalled())) {
-        vscode.window.showErrorMessage("PrustIO extension cannot run without the CLI.");
+        vscode.window.showErrorMessage("pRustIO extension cannot run without the CLI.");
         return; 
     }
 
@@ -93,8 +93,8 @@ function registerWorkspaceCommands(context: vscode.ExtensionContext, wrapper: To
  */
 function setupStatusBar(context: vscode.ExtensionContext) {
     const buildButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-    buildButton.text = "$(gear) PrustIO Build"; 
-    buildButton.tooltip = "Build the current PrustIO project";
+    buildButton.text = "$(gear) pRustIO Build"; 
+    buildButton.tooltip = "Build the current pRustIO project";
     buildButton.command = 'prustio.buildProject';
     buildButton.show();
     context.subscriptions.push(buildButton);
@@ -108,12 +108,12 @@ function setupStatusBar(context: vscode.ExtensionContext) {
 async function runTaskWithProgress(taskName: string, taskFunction: () => Promise<string>) {
     await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
-        title: `PrustIO: ${taskName}...`,
+        title: `pRustIO: ${taskName}...`,
         cancellable: false
     }, async () => {
         try {
             await taskFunction();
-            vscode.window.showInformationMessage(`PrustIO: ${taskName} succeeded!`);
+            vscode.window.showInformationMessage(`pRustIO: ${taskName} succeeded!`);
         } catch (error: any) {
             vscode.window.showErrorMessage(error.message);
         }
@@ -137,7 +137,7 @@ function getCurrentlyOpenedDirectory(): string | undefined {
 }
 
 /**
- * Checks if the PrustIO Command Line Interface (CLI) is installed.
+ * Checks if the pRustIO Command Line Interface (CLI) is installed.
  * If it is not installed, it asks the user if they want to install it.
  * @returns A promise that resolves to true if the CLI is installed, or false otherwise.
  */
@@ -147,7 +147,7 @@ async function ensurePrustioInstalled(): Promise<boolean> {
         return true; 
     } catch (error) {
         const response = await vscode.window.showInformationMessage(
-            "The PrustIO CLI is missing. Would you like to install it now?",
+            "The pRustIO CLI is missing. Would you like to install it now?",
             "Install", "Cancel"
         );
 
@@ -159,7 +159,7 @@ async function ensurePrustioInstalled(): Promise<boolean> {
 }
 
 /**
- * Tries to install the PrustIO CLI tool using Cargo.
+ * Tries to install the pRustIO CLI tool using Cargo.
  * It checks if Cargo is available first.
  * @returns A promise that resolves to true if the installation is successful, or false otherwise.
  */
@@ -168,7 +168,7 @@ async function installPrustioCLI(): Promise<boolean> {
         await execAsync('cargo --version');
     } catch {
         const response = await vscode.window.showErrorMessage(
-            "Cargo is not installed. You need the Rust toolchain to install PrustIO.",
+            "Cargo is not installed. You need the Rust toolchain to install pRustIO.",
             "Get Rust (rustup.rs)", "Cancel"
         );
 
@@ -180,13 +180,13 @@ async function installPrustioCLI(): Promise<boolean> {
 
     return vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
-        title: "Installing PrustIO CLI...",
+        title: "Installing pRustIO CLI...",
         cancellable: false
     }, async (progress) => {
         try {
             progress.report({ message: "Running 'cargo install prustio'..." });
             await execAsync('cargo install prustio');
-            vscode.window.showInformationMessage("PrustIO CLI installed successfully!");
+            vscode.window.showInformationMessage("pRustIO CLI installed successfully!");
             return true;
         } catch (error: any) {
             vscode.window.showErrorMessage(`Failed to install CLI: ${error.message}`);

@@ -6,7 +6,7 @@ import * as util from 'util';
 const execAsync = util.promisify(exec);
 
 /**
- * Represents a board configuration supported by PrustIO.
+ * Represents a board configuration supported by pRustIO.
  */
 export interface PrustioBoard {
     id: string;
@@ -23,7 +23,7 @@ export interface PrustioBoard {
 }
 
 /**
- * A wrapper class for interacting with the PrustIO Command Line Interface (CLI).
+ * A wrapper class for interacting with the pRustIO Command Line Interface (CLI).
  */
 export class ToolWrapper {
     private workspaceRoot?: string;
@@ -48,7 +48,7 @@ export class ToolWrapper {
     }
  
     /**
-     * Initializes a new PrustIO project.
+     * Initializes a new pRustIO project.
      * * @param targetDir The directory where the project will be created.
      * @param name The name of the new project.
      * @param hybrid_flag A boolean indicating if it is a hybrid project (C and Rust).
@@ -118,7 +118,7 @@ export class ToolWrapper {
     }
 
     /**
-     * Gets the list of available boards from the PrustIO CLI.
+     * Gets the list of available boards from the pRustIO CLI.
      * @returns A promise that resolves to an array of PrustioBoard objects.
      */
     public async getBoards(): Promise<PrustioBoard[]> {
@@ -170,7 +170,7 @@ export class ToolWrapper {
             const parsedJson = JSON.parse(error.stdout);
             let finalErrorMessage = parsedJson.message;
 
-            throw new Error(`PrustIO Error: ${finalErrorMessage}`);
+            throw new Error(`pRustIO Error: ${finalErrorMessage}`);
         }
     }
 
@@ -180,7 +180,7 @@ export class ToolWrapper {
      */
     private runCommandInTerminal(command: string) {
         if (!this.prustioTerminal) {
-            this.prustioTerminal = vscode.window.createTerminal("PrustIO");
+            this.prustioTerminal = vscode.window.createTerminal("pRustIO");
         }
         this.prustioTerminal.show();
         this.prustioTerminal.sendText(command);
