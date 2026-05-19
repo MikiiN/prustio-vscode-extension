@@ -2,7 +2,10 @@
   "name": "prustio",
   "displayName": "PrustIO",
   "description": "Manages Rust embedded projects.",
+  "publisher": "Michalzateka",
+  "repository": {"url": "https://github.com/MikiiN/prustio-vscode-extension"},
   "version": "0.0.1",
+  "icon": "resources/icon_prustio.png",
   "engines": {
     "vscode": "^1.110.0"
   },
