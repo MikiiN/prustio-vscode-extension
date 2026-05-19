@@ -13,6 +13,12 @@ const workingDir = getCurrentlyOpenedDirectory();
 
 let activeProjectWrapper: ToolWrapper | undefined;
 
+/**
+ * This function is called when the extension is activated.
+ * It checks if the PrustIO CLI is installed, sets up the user interface,
+ * and registers commands for the workspace.
+ * @param context The context in which the extension runs.
+ */
 export async function activate(context: vscode.ExtensionContext) {
     // initial pRustIO validation
     if (!(await ensurePrustioInstalled())) {
@@ -53,7 +59,9 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 /**
- * Registers project-specific commands elegantly and delegates to ToolWrapper
+ * Registers commands specific to the active project and connects them to the ToolWrapper.
+ * @param context The context in which the extension runs.
+ * @param wrapper The tool wrapper that handles CLI commands.
  */
 function registerWorkspaceCommands(context: vscode.ExtensionContext, wrapper: ToolWrapper) {
     const tasks = [
@@ -80,7 +88,8 @@ function registerWorkspaceCommands(context: vscode.ExtensionContext, wrapper: To
 }
 
 /**
- * Configure status bar to contain the build button and environment manager.
+ * Sets up the status bar to show the build button.
+ * @param context The context in which the extension runs.
  */
 function setupStatusBar(context: vscode.ExtensionContext) {
     const buildButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -92,7 +101,9 @@ function setupStatusBar(context: vscode.ExtensionContext) {
 }
 
 /**
- * Show progress on executed tasks.
+ * Runs a specific task and shows a progress notification to the user.
+ * @param taskName The name of the task to display.
+ * @param taskFunction The function that executes the task.
  */
 async function runTaskWithProgress(taskName: string, taskFunction: () => Promise<string>) {
     await vscode.window.withProgress({
@@ -110,7 +121,8 @@ async function runTaskWithProgress(taskName: string, taskFunction: () => Promise
 }
 
 /**
- * Retrieve currently opened directory path.
+ * Gets the path of the directory that is currently open in the workspace.
+ * @returns The path of the opened directory, or undefined if no folder is open.
  */
 function getCurrentlyOpenedDirectory(): string | undefined {
     const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -125,7 +137,9 @@ function getCurrentlyOpenedDirectory(): string | undefined {
 }
 
 /**
- * Check if pRustIO CLI is installed and if not try to install it.
+ * Checks if the PrustIO Command Line Interface (CLI) is installed.
+ * If it is not installed, it asks the user if they want to install it.
+ * @returns A promise that resolves to true if the CLI is installed, or false otherwise.
  */
 async function ensurePrustioInstalled(): Promise<boolean> {
     try {
@@ -145,7 +159,9 @@ async function ensurePrustioInstalled(): Promise<boolean> {
 }
 
 /**
- * Install pRustIO CLI tool.
+ * Tries to install the PrustIO CLI tool using Cargo.
+ * It checks if Cargo is available first.
+ * @returns A promise that resolves to true if the installation is successful, or false otherwise.
  */
 async function installPrustioCLI(): Promise<boolean> {
     try {
@@ -179,6 +195,10 @@ async function installPrustioCLI(): Promise<boolean> {
     });
 }
 
+/**
+ * This function is called when the extension is deactivated.
+ * It cleans up resources, like the active project wrapper.
+ */
 export function deactivate() {
     activeProjectWrapper?.dispose();
 }

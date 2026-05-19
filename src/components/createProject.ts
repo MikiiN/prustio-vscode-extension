@@ -2,12 +2,25 @@ import * as vscode from 'vscode';
 import { ToolWrapper, PrustioBoard } from '../wrappers/toolWrapper';
 import * as path from 'path';
 
+/**
+ * Represents a webview panel used to create a new PrustIO project.
+ */
 export class CreateProjectWebview {
+   /**
+     * The currently active webview panel, or undefined if none is open.
+     */
     public static currentPanel: CreateProjectWebview | undefined;
+   
     private readonly _panel: vscode.WebviewPanel;
     private _disposables: vscode.Disposable[] = [];
     private defaultLocation: string;
 
+    /**
+     * Creates a new instance of the CreateProjectWebview.
+     * @param panel The webview panel to use.
+     * @param globalWrapper The tool wrapper used to interact with the CLI.
+     * @param defaultLocation The default directory path for the new project.
+     */
     private constructor(panel: vscode.WebviewPanel, private globalWrapper: ToolWrapper, defaultLocation: string) {
         this._panel = panel;
         this.defaultLocation = defaultLocation; 
@@ -35,6 +48,11 @@ export class CreateProjectWebview {
         }, null, this._disposables);
     }
 
+    /**
+     * Displays the webview panel. If it is already open, it brings it to the front.
+     * @param globalWrapper The tool wrapper for CLI interactions.
+     * @param defaultLocation The default directory path to suggest to the user.
+     */
     public static async render(globalWrapper: ToolWrapper, defaultLocation: string = '') {
         if (CreateProjectWebview.currentPanel) {
             // update the location if user opens a different directory
@@ -54,6 +72,9 @@ export class CreateProjectWebview {
         }
     }
 
+    /**
+     * Updates the content of the webview, including fetching the available boards.
+     */
     private async _update() {
         const webview = this._panel.webview;
         
@@ -67,6 +88,10 @@ export class CreateProjectWebview {
         }
     }
 
+    /**
+     * Handles the form submission when the user clicks the create button.
+     * @param data An object containing the project details provided by the user.
+     */
     private async handleFormSubmit(data: { projectName: string, projectLocation: string, mode: string, boardId: string }) {
         const { projectName, projectLocation, mode, boardId } = data;
         
@@ -93,6 +118,9 @@ export class CreateProjectWebview {
         });
     }
 
+    /**
+     * Cleans up the webview resources when the panel is closed.
+     */
     public dispose() {
         CreateProjectWebview.currentPanel = undefined;
         this._panel.dispose();
@@ -102,6 +130,13 @@ export class CreateProjectWebview {
         }
     }
 
+    /**
+     * Generates the HTML content for the webview interface.
+     * @param statusText The text to display as the current status.
+     * @param boards An array of available boards to show in the dropdown list.
+     * @param isLoading A boolean indicating if the data is still loading.
+     * @returns A string containing the HTML markup.
+     */
     private _getHtmlForWebview(statusText: string, boards: PrustioBoard[], isLoading: boolean) {
         const boardOptions = boards.map(b => 
             `<option value="${b.id}">${b.name} (${b.mcu})</option>`
