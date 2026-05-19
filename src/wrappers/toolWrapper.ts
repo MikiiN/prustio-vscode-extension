@@ -31,7 +31,7 @@ export class ToolWrapper {
      * Runs active command
      */
     public async activateEnv(env_name: string): Promise<string> {
-        const command = `prustio activate ${env_name}`;
+        const command = `prustio activate ${env_name} --json-output`;
         return this.runCommand(command);
     }
  
@@ -40,8 +40,8 @@ export class ToolWrapper {
      */
     public async init(targetDir: string, name: string, hybrid_flag: boolean, board: string): Promise<string> {
         const command = hybrid_flag ? 
-            `prustio project init "${name}" --hybrid --board "${board}"` : 
-            `prustio project init "${name}" --board "${board}"`;
+            `prustio project init "${name}" --hybrid --board ${board} --json-output` : 
+            `prustio project init "${name}" --board ${board}  --json-output`;
         return this.runCommand(command, targetDir); 
     }
 
@@ -70,7 +70,7 @@ export class ToolWrapper {
      * Runs project clean command
      */
     public async clean(): Promise<string> {
-        return this.runCommand('prustio clean');
+        return this.runCommand('prustio clean  --json-output');
     }
 
     /**
